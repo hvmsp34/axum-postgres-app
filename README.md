@@ -1,12 +1,14 @@
+Пример Axum + Tokio + PostgreSQL без миграций, с прямыми SQL-запросами:
+
+```bash
 # Развернуть проект
 git clone https://github.com/hvmsp34/axum-postgres-app.git
 cd ./axum-postgres-app
 cargo run
 
-Для получения бинарника
+# Для получения бинарника
 cargo build --relise
-
-Вот простой пример Axum + Tokio + PostgreSQL без миграций, с прямыми SQL-запросами:
+```
 
 # Зависимости
 
