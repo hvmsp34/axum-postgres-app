@@ -5,7 +5,9 @@
 git clone https://github.com/hvmsp34/axum-postgres-app.git
 cd ./axum-postgres-app
 cargo run
+```
 
+```bash
 # Для получения бинарника
 cargo build --relise
 ```
