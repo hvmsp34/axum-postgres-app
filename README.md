@@ -240,7 +240,7 @@ pg_isready -h localhost -p 5432
 pg_isready.exe -h localhost -p 5432
 ```
 
-#### Изменение конфигурации (если нужно)
+# Изменение конфигурации PostgreSQL (если нужно)
 
 Файл `postgresql.conf` (Linux: `/etc/postgresql/16/main/`, macOS: `/usr/local/var/postgres/`):
 
