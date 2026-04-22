@@ -203,4 +203,78 @@ brew services restart postgresql   # macOS
 let database_url = "postgres://postgres:password@localhost:5432/myapp";
 ```
 
-Какой у тебя операционной системе? Могу дать более точные инструкции.
+# Зависимости
+
+Ошибка возникает из-за отсутствия OpenSSL в системе. SQLx использует `native-tls` для подключения к PostgreSQL, а он требует OpenSSL. Есть два решения:
+
+## Решение 1: Установить OpenSSL (рекомендуется)
+
+```bash
+# Установка dev-пакетов OpenSSL
+sudo apt update
+sudo apt install libssl-dev pkg-config
+
+# После установки перезапустить сборку
+cargo clean
+cargo run
+```
+
+## Решение 2: Использовать rustls вместо OpenSSL
+
+Изменить `Cargo.toml`:
+
+```toml
+[package]
+name = "axum-postgres-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+# Заменить native-tls на rustls
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tower-http = { version = "0.5", features = ["cors"] }
+```
+
+После изменения:
+```bash
+cargo clean
+cargo run
+```
+
+## Проверка после установки OpenSSL (вариант 1)
+
+Убедиться что всё работает:
+```bash
+# Проверить что PostgreSQL запущен
+sudo systemctl status postgresql
+
+# Если не запущен - запустить
+sudo systemctl start postgresql
+
+# Создать базу данных (если ещё не создана)
+sudo -u postgres createdb myapp
+
+# Установить пароль для пользователя postgres (если не установлен)
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password';"
+```
+
+## Если PostgreSQL не установлен
+
+```bash
+# Установка PostgreSQL
+sudo apt install postgresql postgresql-contrib
+
+# Запуск службы
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# Создание базы
+sudo -u postgres createdb myapp
+
+# Установка пароля
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password';"
+```
