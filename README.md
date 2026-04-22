@@ -4,16 +4,16 @@
 ```cmd
 git clone https://github.com/hvmsp34/axum-postgres-app.git
 cd ./axum-postgres-app
-cargo run
 start index.html
+cargo run
 ```
 
 #### Linux
 ```bash
 git clone https://github.com/hvmsp34/axum-postgres-app.git
 cd ./axum-postgres-app
-cargo run
 xdg-open index.html
+cargo run
 ```
 
 #### Получение бинарника (если нужно)
