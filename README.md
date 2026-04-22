@@ -1,6 +1,6 @@
 Пример Axum + Tokio + PostgreSQL без миграций, с прямыми SQL-запросами:
 
-#### Windows
+Windows
 ```cmd
 git clone https://github.com/hvmsp34/axum-postgres-app.git
 cd ./axum-postgres-app
@@ -8,7 +8,7 @@ start index.html
 cargo run
 ```
 
-#### Linux
+Linux
 ```bash
 git clone https://github.com/hvmsp34/axum-postgres-app.git
 cd ./axum-postgres-app
@@ -16,7 +16,7 @@ xdg-open index.html
 cargo run
 ```
 
-#### Получение бинарника (если нужно)
+Получение бинарника (если нужно)
 ```bash
 cargo build --relise
 ```
