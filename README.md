@@ -12,6 +12,30 @@ cargo run
 cargo build --relise
 ```
 
+# Тестирование API
+
+```bash
+# Создать пользователя
+curl -X POST http://localhost:3000/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Иван","email":"ivan@example.com"}'
+
+# Получить всех
+curl http://localhost:3000/users
+
+# Получить одного
+curl http://localhost:3000/users/1
+
+# Удалить
+curl -X DELETE http://localhost:3000/users/1
+```
+
+**Особенности:**
+- Таблица создаётся автоматически при старте приложения
+- Нет миграций — работа с БД напрямую через SQL
+- Все запросы пишутся вручную
+- Обработка ошибок простая, но понятная
+
 # Зависимости
 
 ## OpenSSL
@@ -250,27 +274,3 @@ brew services restart postgresql   # macOS
 ```rust
 let database_url = "postgres://postgres:password@localhost:5432/myapp";
 ```
-
-# Тестирование API
-
-```bash
-# Создать пользователя
-curl -X POST http://localhost:3000/users \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Иван","email":"ivan@example.com"}'
-
-# Получить всех
-curl http://localhost:3000/users
-
-# Получить одного
-curl http://localhost:3000/users/1
-
-# Удалить
-curl -X DELETE http://localhost:3000/users/1
-```
-
-**Особенности:**
-- Таблица создаётся автоматически при старте приложения
-- Нет миграций — работа с БД напрямую через SQL
-- Все запросы пишутся вручную
-- Обработка ошибок простая, но понятная
