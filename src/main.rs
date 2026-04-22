@@ -7,6 +7,8 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::net::SocketAddr;
+use std::path::Path as FilePath;
+use std::process::Command;
 use tower_http::cors::CorsLayer;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -52,6 +54,10 @@ async fn main() {
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("Server running on http://{}", addr);
+
+    println!("GitHub: https://github.com/hvmsp34/axum-postgres-app");
+
+    open_in_browser("./index.html");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
@@ -130,4 +136,45 @@ async fn delete_user(State(state): State<AppState>, Path(id): Path<i32>) -> impl
         Ok(_) => axum::http::StatusCode::NO_CONTENT.into_response(),
         Err(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
     }
+}
+
+fn open_in_browser(file_path: &str) {
+    let path = FilePath::new(file_path);
+
+    // Проверяем, существует ли файл
+    if !path.exists() {
+        println!("Файл не найден: {}", file_path);
+        return;
+    }
+
+    // Получаем абсолютный путь
+    let absolute_path = std::fs::canonicalize(path).unwrap();
+    let url = format!("file://{}", absolute_path.display());
+
+    // Открываем в браузере в зависимости от ОС
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .expect("Не удалось открыть браузер");
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(&["/C", "start", &url])
+            .spawn()
+            .expect("Не удалось открыть браузер");
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&url)
+            .spawn()
+            .expect("Не удалось открыть браузер");
+    }
+
+    println!("Файл открыт в браузере: {}", url);
 }
