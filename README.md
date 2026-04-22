@@ -30,6 +30,21 @@ cargo clean
 cargo run
 ```
 
+Проверка после установки:
+```bash
+# Проверить что PostgreSQL запущен
+sudo systemctl status postgresql
+
+# Если не запущен - запустить
+sudo systemctl start postgresql
+
+# Создать базу данных (если ещё не создана)
+sudo -u postgres createdb myapp
+
+# Установить пароль для пользователя postgres (если не установлен)
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password';"
+```
+
 ### Решение 2: Использовать rustls вместо OpenSSL
 
 Изменить `Cargo.toml`:
@@ -54,23 +69,6 @@ tower-http = { version = "0.5", features = ["cors"] }
 ```bash
 cargo clean
 cargo run
-```
-
-### Проверка после установки OpenSSL (вариант 1)
-
-Убедиться что всё работает:
-```bash
-# Проверить что PostgreSQL запущен
-sudo systemctl status postgresql
-
-# Если не запущен - запустить
-sudo systemctl start postgresql
-
-# Создать базу данных (если ещё не создана)
-sudo -u postgres createdb myapp
-
-# Установить пароль для пользователя postgres (если не установлен)
-sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password';"
 ```
 
 ## PostgreSQL
