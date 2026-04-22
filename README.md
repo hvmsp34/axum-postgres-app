@@ -113,9 +113,8 @@ docker run --name postgres-axum \
 
 #### Linux (Ubuntu/Debian)
 
-##### Установка
 ```bash
-# Установка PostgreSQL
+# Установка
 sudo apt update
 sudo apt install postgresql postgresql-contrib
 
@@ -123,7 +122,7 @@ sudo apt install postgresql postgresql-contrib
 sudo systemctl status postgresql
 ```
 
-##### Первоначальная настройка
+Первоначальная настройка
 ```bash
 # Переключиться на пользователя postgres
 sudo -i -u postgres
@@ -145,8 +144,7 @@ ALTER USER postgres WITH PASSWORD 'password';
 ```bash
 exit
 ```
-
-##### Управление службой
+Управление службой
 ```bash
 # Запуск
 sudo systemctl start postgresql
@@ -183,7 +181,6 @@ sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password';"
 
 #### macOS
 
-##### Через Homebrew
 ```bash
 # Установка
 brew install postgresql@16
@@ -198,14 +195,13 @@ createdb myapp
 psql -d myapp -c "ALTER USER postgres WITH PASSWORD 'password';"
 ```
 
-##### Через официальный установщик
+Или через официальный установщик
 1. Скачать с [postgresql.org](https://www.postgresql.org/download/macosx/)
 2. Установить как обычное приложение
 3. Использовать pgAdmin для управления или командную строку
 
 #### Windows
 
-##### Через официальный установщик
 1. Скачать с [postgresql.org](https://www.postgresql.org/download/windows/)
 2. Запустить установщик
 3. При установке:
@@ -213,17 +209,16 @@ psql -d myapp -c "ALTER USER postgres WITH PASSWORD 'password';"
    - Оставить порт `5432`
    - Выбрать локаль `Russian, Russia`
 
-##### Запуск службы
 ```cmd
-# Через PowerShell (от администратора)
+# Запуск службы через PowerShell (от администратора)
 net start postgresql-x64-16
 
 # Или через Services (Win+R -> services.msc)
 # Найти "postgresql-x64-16" -> Правой кнопкой -> Start
 ```
 
-##### Создание базы через командную строку
 ```cmd
+# Создание базы через командную строку
 # Добавить в PATH: C:\Program Files\PostgreSQL\16\bin
 cd C:\Program Files\PostgreSQL\16\bin
 
