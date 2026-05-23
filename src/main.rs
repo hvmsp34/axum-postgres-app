@@ -67,7 +67,7 @@ async fn main() {
 
     println!("GitHub: https://github.com/hvmsp34/axum-postgres-app");
 
-    open_in_browser("./index.html");
+    open_in_browser("./frontend/index.html");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
