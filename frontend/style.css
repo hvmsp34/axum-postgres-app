@@ -11,7 +11,7 @@ body {
   padding: 20px;
 }
 
-.container {
+main {
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -234,4 +234,18 @@ button:active {
   .grid {
     grid-template-columns: 1fr;
   }
+}
+
+#getAllUsersBtn {
+  width: auto;
+  margin-bottom: 15px;
+}
+
+#usersList p {
+  color: #999;
+  text-align: center;
+}
+
+#getUserResult {
+  display: none;
 }
