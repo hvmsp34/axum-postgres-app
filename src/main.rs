@@ -31,14 +31,24 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
-    // Подключение к PostgreSQL
-    let database_url = "postgres://postgres:password@localhost:5432/myapp";
+    // Загружает переменные из .env файла в окружение процесса
+    dotenvy::dotenv()
+        .expect("Не удалось загрузить .env файл");
 
+    let db_user = std::env::var("DB_USER").expect("DB_USER missing");
+    let db_pass = std::env::var("DB_PASSWORD").expect("DB_PASSWORD missing");
+    let db_host = std::env::var("DB_HOST").expect("DB_HOST missing");
+    let db_port = std::env::var("DB_PORT").expect("DB_PORT missing");
+    let db_name = std::env::var("DB_NAME").expect("DB_NAME missing");
+
+    let database_url = format!("postgres://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}");
+
+    // Подключение к PostgreSQL с использованием полученной строки
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect(database_url)
+        .connect(&database_url)
         .await
-        .expect("Failed to connect to database");
+        .expect("Не удалось подключиться к базе данных");
 
     // Создание таблицы, если её нет
     create_users_table(&pool).await;
