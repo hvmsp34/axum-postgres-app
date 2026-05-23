@@ -9,10 +9,9 @@ docker run --name postgres-axum \
   -e POSTGRES_PASSWORD=password \
   -e POSTGRES_DB=myapp \
   -p 5432:5432 \
-  -d postgres:latest
+  -d postgres:alpine
 git clone https://github.com/hvmsp34/axum-postgres-app.git
 cd ./axum-postgres-app
-xdg-open index.html
 cargo run
 ```
 
@@ -22,28 +21,19 @@ docker run --name postgres-axum \
   -e POSTGRES_PASSWORD=password \
   -e POSTGRES_DB=myapp \
   -p 5432:5432 \
-  -d postgres:latest
+  -d postgres:alpine
 git clone https://github.com/hvmsp34/axum-postgres-app.git
 cd ./axum-postgres-app
-start index.html
 cargo run
 ```
 
 ## Последующий запуск
 
-Linux
-```bash
-xdg-open index.html
+```shell
 cargo run
 ```
 
-Windows
-```ps1
-start index.html
-cargo run
-```
-
-## Получение бинарника (если нужно)
+## Получение бинарника
 ```bash
 cargo build --relise
 ```
@@ -130,9 +120,12 @@ curl -X DELETE http://localhost:3000/users/1
 
 
 
-# PostgreSQL без Docker
 
-## Linux (Ubuntu/Debian)
+# Необязательное
+
+## PostgreSQL без Docker
+
+### Linux (Ubuntu/Debian)
 
 ```bash
 # Установка
@@ -180,7 +173,7 @@ sudo systemctl restart postgresql
 sudo systemctl enable postgresql
 ```
 
-## Linux (Arch/Manjaro)
+### Linux (Arch/Manjaro)
 
 ```bash
 # Установка
@@ -200,14 +193,14 @@ sudo -u postgres createdb myapp
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password';"
 ```
 
-## macOS
+### macOS
 
 ```bash
 # Установка
-brew install postgresql@latest
+brew install postgresql
 
 # Запуск службы
-brew services start postgresql@latest
+brew services start postgresql
 
 # Создание базы
 createdb myapp
@@ -221,7 +214,7 @@ psql -d myapp -c "ALTER USER postgres WITH PASSWORD 'password';"
 2. Установить как обычное приложение
 3. Использовать pgAdmin для управления или командную строку
 
-## Windows
+### Windows
 
 1. Скачать с [postgresql.org](https://www.postgresql.org/download/windows/)
 2. Запустить установщик
@@ -250,7 +243,7 @@ createdb -U postgres myapp
 psql -U postgres
 ```
 
-## Проверка подключения
+### Проверка подключения
 
 После установки проверить, что PostgreSQL работает:
 ```bash
@@ -261,7 +254,7 @@ pg_isready -h localhost -p 5432
 pg_isready.exe -h localhost -p 5432
 ```
 
-# Изменение конфигурации PostgreSQL (если нужно)
+## Изменение конфигурации PostgreSQL (если нужно)
 
 Linux: 
 ```bash
