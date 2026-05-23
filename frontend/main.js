@@ -1,208 +1,136 @@
 const API_URL = 'http://localhost:3000/users';
 
 function init() {
-  createForm.onsubmit = async (e) => {
+  customElements.define('user-card', UserCard);
+  renderList();
+
+  createForm.onsubmit = (e) => {
     e.preventDefault();
-    const data = extractDataFromForm(e);
-    await user.create(data);
+    safeExecute(userActions.create, createStatus)(e);
   };
 
-  getUserBtn.onclick = async () => {
+  getUserBtn.onclick = () => {
     const id = getUserId.value.trim();
-    if (!id) return showStatus(getUserStatus, '❌ Введите ID пользователя', true);
-    await user.getById(id);
+    id ? safeExecute(userActions.getById, getUserStatus)(id) : showStatus(getUserStatus, '❌ Введите ID', true);
   };
 
-  deleteUserBtn.onclick = async () => {
+  deleteUserBtn.onclick = () => {
     const id = deleteUserId.value.trim();
-    if (!id) return showStatus(deleteStatus, '❌ Введите ID пользователя', true);
-    await user.deleteById(id);
+    id ? safeExecute(userActions.deleteById, deleteStatus)(id) : showStatus(deleteStatus, '❌ Введите ID', true);
   };
 
-  getAllUsersBtn.onclick = async () => await render();
+  getAllUsersBtn.onclick = () => renderList();
 
-  // Дописать внутрь функции init():
-  usersList.onclick = async (e) => {
-    // Проверяем клик сквозь границы Shadow DOM
-    const path = e.composedPath();
-    const button = path.find(el => el.tagName === 'BUTTON' && el.hasAttribute('data-id'));
+  usersList.onclick = (e) => {
+    const btn = e.composedPath().find(el => el.tagName === 'BUTTON' && el.hasAttribute('data-id'));
+    if (!btn) return;
 
-    if (!button) return;
+    const action = btn.classList.contains('view-btn') ? userActions.getById : userActions.deleteById;
+    const status = btn.classList.contains('view-btn') ? getUserStatus : deleteStatus;
 
-    const id = button.dataset.id;
-
-    if (button.classList.contains('view-btn')) {
-      await user.getById(id);
-    } else if (button.classList.contains('delete-btn')) {
-      await user.deleteById(id);
-    }
+    safeExecute(action, status)(btn.dataset.id);
   };
-
-  window.onload = render;
 }
 
-// Чистый API-клиент (только запросы к серверу, никакого DOM)
+// --- СЛОЙ ДАННЫХ И СЕТИ (API CLIENT) ---
 const userApi = {
-  async create(data) {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-    return response.json();
-  },
-
-  async getById(id) {
-    const response = await fetch(`${API_URL}/${id}`);
+  async _request(url, options = {}) {
+    const response = await fetch(url, options);
     if (response.status === 404) throw new Error('Пользователь не найден');
     if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-    return response.json();
+    return response.status !== 204 ? response.json() : true;
   },
-
-  async deleteById(id) {
-    const response = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-    if (response.status === 404) throw new Error('Пользователь не найден');
-    if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-    return true;
-  },
-
-  async getAll() {
-    const response = await fetch(API_URL);
-    if (!response.ok) throw new Error(`Ошибка сервера: ${response.status}`);
-    return response.json();
-  }
+  create: (data) => userApi._request(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }),
+  getById: (id) => userApi._request(`${API_URL}/${id}`),
+  deleteById: (id) => userApi._request(`${API_URL}/${id}`, { method: 'DELETE' }),
+  getAll: () => userApi._request(API_URL)
 };
 
-// Логика UI (управление элементами страницы)
-const user = {
-  async create(data) {
-    try {
-      const result = await userApi.create(data);
-      showStatus(createStatus, `✅ Пользователь создан! ID: ${result.id}`, false);
-      createForm.reset();
-      await render();
-    } catch (error) {
-      showStatus(createStatus, `❌ ${error.message}`, true);
-      console.error('Ошибка создания:', error);
-    }
+// --- КОНТРОЛЛЕР UI И ДЕЙСТВИЙ ---
+const userActions = {
+  async create(e) {
+    const data = Object.fromEntries(new FormData(e.target));
+    const result = await userApi.create(data);
+    showStatus(createStatus, `✅ Создан пользователь ID: ${result.id}`);
+    createForm.reset();
+    await renderList();
   },
 
   async getById(id) {
     getUserResult.style.display = 'block';
-    getUserData.textContent = 'Загрузка...';
-    try {
-      const userData = await userApi.getById(id); // Исправлено имя переменной
-      getUserData.textContent = JSON.stringify(userData, null, 2);
-      showStatus(getUserStatus, `✅ Пользователь найден`, false);
-    } catch (error) {
-      getUserData.textContent = `Ошибка: ${error.message}`;
-      showStatus(getUserStatus, `❌ ${error.message}`, true);
-      console.error('Ошибка получения:', error);
-    }
+    // getUserData.textContent = 'Загрузка...';
+    const data = await userApi.getById(id);
+    getUserData.textContent = JSON.stringify(data, null, 2);
+    showStatus(getUserStatus, `✅ Пользователь найден`);
   },
 
   async deleteById(id) {
-    if (!confirm(`Вы уверены, что хотите удалить пользователя с ID ${id}?`)) return;
-    try {
-      await userApi.deleteById(id);
-      showStatus(deleteStatus, `✅ Пользователь ID ${id} удален`, false);
-      deleteUserId.value = '';
-      await render();
-    } catch (error) {
-      showStatus(deleteStatus, `❌ ${error.message}`, true);
-      console.error('Ошибка удаления:', error);
-    }
+    if (!confirm(`Вы уверены, что хотите удалить ID ${id}?`)) return;
+    await userApi.deleteById(id);
+    showStatus(deleteStatus, `✅ Пользователь ID ${id} удален`);
+    deleteUserId.value = '';
+    await renderList();
   }
 };
 
-function extractDataFromForm(e) {
-  return Object.fromEntries(new FormData(e.currentTarget));
-}
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И РЕНДЕРИНГ ---
+const timers = new Map();
 
-// Вспомогательная функция для отображения статуса
 function showStatus(element, message, isError = false) {
+  if (timers.has(element)) clearTimeout(timers.get(element));
+
   element.textContent = message;
   element.className = `status ${isError ? 'error' : 'success'}`;
-  setTimeout(() => {
-    element.style.display = 'none';
-    setTimeout(() => {
-      element.className = 'status';
-      element.textContent = '';
-    }, 300);
-  }, 3000);
   element.style.display = 'block';
+
+  timers.set(element, setTimeout(() => {
+    element.style.display = 'none';
+    element.className = 'status';
+    element.textContent = '';
+    timers.delete(element);
+  }, 3000));
 }
 
-async function render() {
-  // Для статусных сообщений (загрузка/пусто) пока оставим текстовое заполнение
-  usersList.textContent = '';
+// Обертка для безопасного перехвата ошибок во всех асинхронных действиях
+const safeExecute = (actionFn, statusElement) => async (...args) => {
+  try {
+    await actionFn(...args);
+  } catch (error) {
+    if (statusElement) showStatus(statusElement, `❌ ${error.message}`, true);
+    console.error(error);
+  }
+};
 
-  const loader = document.createElement('div');
-  loader.className = 'loading';
-  loader.style.cssText = 'display: block; margin: 20px auto;';
-  usersList.appendChild(loader);
+async function renderList() {
+  usersList.innerHTML = '<div class="loading" style="display:block; margin:20px auto;"></div>';
+  showStatus(allUsersStatus, '');
 
   try {
     const users = await userApi.getAll();
-    loader.remove(); // Удаляем индикатор загрузки
+    usersList.textContent = users.length ? '' : '📭 Пользователей пока нет';
+    if (!users.length) return;
 
-    if (users.length === 0) {
-      const emptyMsg = document.createElement('p');
-      emptyMsg.style.cssText = 'color: #999; text-align: center;';
-      emptyMsg.textContent = '📭 Пользователей пока нет';
-      usersList.appendChild(emptyMsg);
-      return;
-    }
-
-    // Создаем фрагмент в памяти для быстрой вставки (оптимизация производительности)
     const fragment = document.createDocumentFragment();
-
-    users.forEach(userData => {
-      // Создаем наш кастомный элемент
+    users.forEach(({ name, email, id }) => {
       const card = document.createElement('user-card');
-
-      // Передаем данные через атрибуты
-      card.setAttribute('name', userData.name);
-      card.setAttribute('email', userData.email);
-      card.setAttribute('user-id', userData.id);
-
+      Object.entries({ name, email, 'user-id': id }).forEach(([k, v]) => card.setAttribute(k, v));
       fragment.appendChild(card);
     });
-
-    // Вставляем всё дерево разом — браузер перерисует страницу всего 1 раз
     usersList.appendChild(fragment);
-
-    showStatus(allUsersStatus, `✅ Загружено ${users.length} пользователей`, false);
+    showStatus(allUsersStatus, `✅ Загружено пользователей: ${users.length}`);
   } catch (error) {
-    usersList.textContent = '';
-    const errorMsg = document.createElement('p');
-    errorMsg.style.cssText = 'color: #e53e3e; text-align: center;';
-    errorMsg.textContent = '❌ Ошибка загрузки пользователей';
-    usersList.appendChild(errorMsg);
-
-    showStatus(allUsersStatus, `❌ Ошибка: ${error.message}`, true);
-    console.error('Ошибка получения списка:', error);
+    usersList.textContent = '❌ Ошибка загрузки';
+    showStatus(allUsersStatus, `❌ ${error.message}`, true);
   }
 }
 
+// --- ВЕБ-КОМПОНЕНТ ---
 class UserCard extends HTMLElement {
   constructor() {
-    super();
-    // Создаем Shadow DOM для изоляции стилей и разметки
-    this.attachShadow({ mode: 'open' });
-
-    // Шаблон компонента
-    this.shadowRoot.innerHTML = `
+    super().attachShadow({ mode: 'open' }).innerHTML = `
       <style>
         :host { display: block; }
-        .user-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px;
-          border-bottom: 1px solid #eee;
-        }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
         .user-name { font-weight: bold; }
         .user-email, .user-id { color: #666; font-size: 0.9em; }
         .user-actions { display: flex; gap: 8px; }
@@ -220,26 +148,18 @@ class UserCard extends HTMLElement {
           <button class="view-btn">Просмотр</button>
           <button class="delete-btn">Удалить</button>
         </div>
-      </div>
-    `;
+      </div>`;
   }
 
-  // Заполняем компонент данными, когда он появляется на странице
   connectedCallback() {
-    const name = this.getAttribute('name');
-    const email = this.getAttribute('email');
-    const id = this.getAttribute('user-id');
+    const [name, email, id] = ['name', 'email', 'user-id'].map(attr => this.getAttribute(attr));
 
-    // Безопасное заполнение через textContent (XSS защита "из коробки")
     this.shadowRoot.querySelector('.user-name').textContent = name;
     this.shadowRoot.querySelector('.user-email').textContent = `📧 ${email}`;
     this.shadowRoot.querySelector('.user-id').textContent = `🆔 ID: ${id}`;
 
-    // Пробрасываем ID в data-атрибуты самих кнопок внутри Shadow DOM
-    this.shadowRoot.querySelector('.view-btn').dataset.id = id;
-    this.shadowRoot.querySelector('.delete-btn').dataset.id = id;
+    this.shadowRoot.querySelectorAll('button').forEach(btn => btn.dataset.id = id);
   }
 }
 
-customElements.define('user-card', UserCard);
 init();
