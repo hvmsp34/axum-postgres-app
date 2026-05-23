@@ -1,0 +1,4 @@
+[alias]
+setup = "make setup"
+down = "make down"
+reset = "make reset"

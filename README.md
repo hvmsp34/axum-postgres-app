@@ -1,35 +1,21 @@
 Пример Axum + Tokio + PostgreSQL без миграций, с прямыми SQL-запросами:
 
-# Запуск
-
-## Установка и первоначальная настройка с Docker (если нужно без Docker - инструкция ниже)
-Linux
-```bash
-docker run --name postgres-axum \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=myapp \
-  -p 5432:5432 \
-  -d postgres:alpine
-git clone https://github.com/hvmsp34/axum-postgres-app.git
-cd ./axum-postgres-app
-cargo run
-```
-
-Windows
-```ps1
-docker run --name postgres-axum \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=myapp \
-  -p 5432:5432 \
-  -d postgres:alpine
-git clone https://github.com/hvmsp34/axum-postgres-app.git
-cd ./axum-postgres-app
-cargo run
-```
-
-## Последующий запуск
+# Команды
 
 ```shell
+# Установка и первоначальная настройка с Docker (если нужно без Docker, то смотри в отдельной главе)
+cargo setup
+```
+```shell
+# Сбросить БД
+cargo reset
+```
+```shell
+# Удалить docker контейнер с БД
+cargo remove
+```
+```shell
+# Последующий запуск стандартно
 cargo run
 ```
 
