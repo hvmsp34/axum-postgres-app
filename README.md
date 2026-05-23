@@ -1,57 +1,57 @@
 Пример Axum + Tokio + PostgreSQL без миграций, с прямыми SQL-запросами:
 
-Windows
-```cmd
-git clone https://github.com/hvmsp34/axum-postgres-app.git
-cd ./axum-postgres-app
-start index.html
-cargo run
-```
+# Запуск
 
+## Установка и первоначальная настройка с Docker (если нужно без Docker - инструкция ниже)
 Linux
 ```bash
+docker run --name postgres-axum \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=myapp \
+  -p 5432:5432 \
+  -d postgres:latest
 git clone https://github.com/hvmsp34/axum-postgres-app.git
 cd ./axum-postgres-app
 xdg-open index.html
 cargo run
 ```
 
-Получение бинарника (если нужно)
+Windows
+```ps1
+docker run --name postgres-axum \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=myapp \
+  -p 5432:5432 \
+  -d postgres:latest
+git clone https://github.com/hvmsp34/axum-postgres-app.git
+cd ./axum-postgres-app
+start index.html
+cargo run
+```
+
+## Последующий запуск
+
+Linux
+```bash
+xdg-open index.html
+cargo run
+```
+
+Windows
+```ps1
+start index.html
+cargo run
+```
+
+## Получение бинарника (если нужно)
 ```bash
 cargo build --relise
 ```
+# OpenSSL
 
-# Тестирование API
+Может возникать ошибка из-за отсутствия OpenSSL в системе. SQLx использует `native-tls` для подключения к PostgreSQL, а он требует OpenSSL. Есть два решения:
 
-```bash
-# Создать пользователя
-curl -X POST http://localhost:3000/users \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Иван","email":"ivan@example.com"}'
-
-# Получить всех
-curl http://localhost:3000/users
-
-# Получить одного
-curl http://localhost:3000/users/1
-
-# Удалить
-curl -X DELETE http://localhost:3000/users/1
-```
-
-**Особенности:**
-- Таблица создаётся автоматически при старте приложения
-- Нет миграций — работа с БД напрямую через SQL
-- Все запросы пишутся вручную
-- Обработка ошибок простая, но понятная
-
-# Зависимости
-
-## OpenSSL
-
-Ошибка возникает из-за отсутствия OpenSSL в системе. SQLx использует `native-tls` для подключения к PostgreSQL, а он требует OpenSSL. Есть два решения:
-
-### Решение 1: Установить OpenSSL (рекомендуется)
+## Решение 1: Установить OpenSSL (рекомендуется)
 
 ```bash
 # Установка dev-пакетов OpenSSL
@@ -78,7 +78,7 @@ sudo -u postgres createdb myapp
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password';"
 ```
 
-### Решение 2: Использовать rustls вместо OpenSSL
+## Решение 2: Использовать rustls вместо OpenSSL
 
 Изменить `Cargo.toml`:
 
@@ -104,23 +104,35 @@ cargo clean
 cargo run
 ```
 
-## PostgreSQL
-
-Варианта 2: Docker и без. Выбирайте сами под свои задачи.
-
-### внутри Docker
+# Тестирование API
 
 ```bash
-docker run --name postgres-axum \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=myapp \
-  -p 5432:5432 \
-  -d postgres:16
+# Создать пользователя
+curl -X POST http://localhost:3000/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Иван","email":"ivan@example.com"}'
+
+# Получить всех
+curl http://localhost:3000/users
+
+# Получить одного
+curl http://localhost:3000/users/1
+
+# Удалить
+curl -X DELETE http://localhost:3000/users/1
 ```
 
-### без Docker
+**Особенности:**
+- Таблица создаётся автоматически при старте приложения
+- Нет миграций — работа с БД напрямую через SQL
+- Все запросы пишутся вручную
+- Обработка ошибок простая, но понятная
 
-#### Linux (Ubuntu/Debian)
+
+
+# PostgreSQL без Docker
+
+## Linux (Ubuntu/Debian)
 
 ```bash
 # Установка
@@ -168,7 +180,7 @@ sudo systemctl restart postgresql
 sudo systemctl enable postgresql
 ```
 
-#### Linux (Arch/Manjaro)
+## Linux (Arch/Manjaro)
 
 ```bash
 # Установка
@@ -188,14 +200,14 @@ sudo -u postgres createdb myapp
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'password';"
 ```
 
-#### macOS
+## macOS
 
 ```bash
 # Установка
-brew install postgresql@16
+brew install postgresql@latest
 
 # Запуск службы
-brew services start postgresql@16
+brew services start postgresql@latest
 
 # Создание базы
 createdb myapp
@@ -209,7 +221,7 @@ psql -d myapp -c "ALTER USER postgres WITH PASSWORD 'password';"
 2. Установить как обычное приложение
 3. Использовать pgAdmin для управления или командную строку
 
-#### Windows
+## Windows
 
 1. Скачать с [postgresql.org](https://www.postgresql.org/download/windows/)
 2. Запустить установщик
@@ -218,7 +230,7 @@ psql -d myapp -c "ALTER USER postgres WITH PASSWORD 'password';"
    - Оставить порт `5432`
    - Выбрать локаль `Russian, Russia`
 
-```cmd
+```ps1
 # Запуск службы через PowerShell (от администратора)
 net start postgresql-x64-16
 
@@ -226,7 +238,7 @@ net start postgresql-x64-16
 # Найти "postgresql-x64-16" -> Правой кнопкой -> Start
 ```
 
-```cmd
+```ps1
 # Создание базы через командную строку
 # Добавить в PATH: C:\Program Files\PostgreSQL\16\bin
 cd C:\Program Files\PostgreSQL\16\bin
@@ -238,7 +250,7 @@ createdb -U postgres myapp
 psql -U postgres
 ```
 
-#### Проверка подключения
+## Проверка подключения
 
 После установки проверить, что PostgreSQL работает:
 ```bash
@@ -251,30 +263,32 @@ pg_isready.exe -h localhost -p 5432
 
 # Изменение конфигурации PostgreSQL (если нужно)
 
-Файл `postgresql.conf` (Linux: `/etc/postgresql/16/main/`, macOS: `/usr/local/var/postgres/`):
-
+Linux: 
+```bash
+cd $(ls -d /etc/postgresql/*/main/ | sort -V | tail -n 1)
 ```
+macOS: 
+```zsh
+cd /usr/local/var/postgres/
+```
+
+Скорректировать файлы в директории
+```postgresql.conf
 # Разрешить подключения не только с localhost (опционально)
 listen_addresses = 'localhost'  # или '*' для всех интерфейсов
 ```
-
-Файл `pg_hba.conf` (там же):
-
-```
+```pg_hba.conf
 # Разрешить парольную аутентификацию
 host    all             all             127.0.0.1/32            md5
 host    all             all             ::1/128                 md5
 ```
 
-После изменений перезапустить PostgreSQL:
+После изменений перезапустить PostgreSQL
+Linux: 
 ```bash
-sudo systemctl restart postgresql  # Linux
-brew services restart postgresql   # macOS
+sudo systemctl restart postgresql
 ```
-
-#### Строка подключения для Rust
-
-Теперь в коде использовать:
-```rust
-let database_url = "postgres://postgres:password@localhost:5432/myapp";
+macOS: 
+```zsh
+brew services restart postgresql
 ```
