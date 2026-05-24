@@ -12,6 +12,7 @@ dependencies = ["setup-container", "reset"]
 description = "Быстрый запуск существующего контейнера и приложения"
 script_runner = "@shell"
 script = """
+cargo check
 if [ "$(docker ps -aq -f name=^postgres-axum$)" ]; then
   echo "Контейнер найден. Запускаем..."
   docker start postgres-axum
@@ -136,11 +137,19 @@ cargo make wait-postgres
 
 # Делаем таск публичным, чтобы его можно было вызывать из shell-скриптов
 [tasks.wait-postgres]
-description = "Ожидание готовности PostgreSQL"
+description = "Ожидание полной готовности PostgreSQL"
 script_runner = "@shell"
 script = """
 echo "Ожидаем запуск PostgreSQL..."
+# Сначала ждем, пока процесс вообще начнет отвечать
 until docker exec postgres-axum pg_isready -U postgres -d myapp >/dev/null 2>&1; do
   sleep 0.5
 done
+
+# Дополнительно ждем, пока база начнет успешно выполнять тестовые запросы
+# Это защитит от падения во время внутренней перезагрузки контейнера
+until docker exec postgres-axum psql -U postgres -d myapp -c "SELECT 1" >/dev/null 2>&1; do
+  sleep 0.5
+done
+echo "PostgreSQL полностью готов к работе!"
 """
