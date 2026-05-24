@@ -1,0 +1,4 @@
+[alias]
+up = "make up"
+down = "make down"
+reset = "make reset"

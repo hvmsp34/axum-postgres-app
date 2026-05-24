@@ -1,0 +1,155 @@
+[config]
+skip_core_tasks = true
+
+# --- КОРНЕВЫЕ ТАСКИ ---
+
+[tasks.setup]
+description = "Полная инициализация: поднятие контейнера, создание таблиц, генерация сидов и запуск"
+dependencies = ["setup-container", "reset"]
+
+
+[tasks.up]
+description = "Быстрый запуск существующего контейнера и приложения"
+script_runner = "@shell"
+script = """
+cargo check
+if [ "$(docker ps -aq -f name=^postgres-axum$)" ]; then
+  echo "Контейнер найден. Запускаем..."
+  docker start postgres-axum
+  cargo make wait-postgres
+  cargo run
+else
+  echo "Контейнер не найден! Запуск полной инициализации..."
+  cargo make setup
+fi
+"""
+
+
+[tasks.down]
+description = "Остановка и удаление контейнера"
+script_runner = "@shell"
+script = """
+echo "Удаление контейнера postgres-axum..."
+docker rm -f postgres-axum 2>/dev/null || true
+"""
+
+
+[tasks.reset]
+description = "Пересоздание схемы, генерация тестовых данных и запуск приложения"
+dependencies = ["wait-postgres"]
+script_runner = "@shell"
+script = """
+echo "Сброс базы данных и генерация фикстур..."
+docker exec -i postgres-axum psql -U postgres -d myapp <<'EOF'
+TRUNCATE TABLE users RESTART IDENTITY CASCADE;
+
+CREATE OR REPLACE FUNCTION transliterate_iso(txt text) RETURNS text AS $$
+DECLARE
+  result text := lower(txt);
+BEGIN
+  result := replace(result, 'щ', 'shch');
+  result := replace(result, 'ч', 'ch');
+  result := replace(result, 'ш', 'sh');
+  result := replace(result, 'ж', 'zh');
+  result := replace(result, 'х', 'kh');
+  result := replace(result, 'ц', 'cz');
+  result := replace(result, 'ю', 'yu');
+  result := replace(result, 'я', 'ya');
+  result := replace(result, 'ё', 'yo');
+  result := replace(result, 'ь', '');
+  result := replace(result, 'ъ', '');
+  RETURN translate(result, 'абвгдезийклмнопрстуфэы', 'abvgdeziijklmnoprstufei');
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+INSERT INTO users (name, email, gender)
+SELECT 
+    name_str,
+    transliterate_iso(replace(name_str, ' ', '.')) || i || floor(random() * 90 + 10)::text || '@' || random_domains[floor(random() * array_length(random_domains, 1) + 1)],
+    gender_str
+FROM (
+    SELECT 
+        i,
+        CASE WHEN is_male THEN 'male' ELSE 'female' END AS gender_str,
+        CASE 
+            WHEN is_male THEN
+                initcap(m_names[floor(random() * array_length(m_names, 1) + 1)]) || ' ' || initcap(m_surnames[floor(random() * array_length(m_surnames, 1) + 1)])
+            ELSE
+                initcap(f_names[floor(random() * array_length(f_names, 1) + 1)]) || ' ' || initcap(f_surnames[floor(random() * array_length(f_surnames, 1) + 1)])
+        END AS name_str,
+        random_domains
+    FROM (
+        SELECT (random() > 0.5) AS is_male, i FROM generate_series(1, 100) AS i
+    ) AS steps
+    CROSS JOIN (
+        SELECT 
+            ARRAY['александр', 'дмитрий', 'сергей', 'андрей', 'алексей', 'максим', 'евгений', 'иван', 'михаил', 'артем'] AS m_names,
+            ARRAY['елена', 'ольга', 'наталья', 'екатерина', 'анна', 'мария', 'юлия', 'анастасия', 'татьяна', 'светлана'] AS f_names,
+            ARRAY['иванов', 'петров', 'сидоров', 'смирнов', 'кузнецов', 'попов', 'васильев', 'соколов', 'михайлов', 'новиков', 'федоров', 'морозов', 'волков', 'соловьев'] AS m_surnames,
+            ARRAY['иванова', 'петрова', 'сидорова', 'смирнова', 'кузнецова', 'попова', 'васильева', 'соколова', 'михайлова', 'новикова', 'федорова', 'морозова', 'волкова', 'соловьева'] AS f_surnames,
+            ARRAY['gmail.com', 'yandex.ru', 'mail.ru', 'outlook.com'] AS random_domains
+    ) AS arrays
+) AS mock_data
+ON CONFLICT (email) DO NOTHING;
+EOF
+
+cargo run
+"""
+
+
+# --- ПРИВАТНЫЕ ВСПОМОГАТЕЛЬНЫЕ ТАСКИ ---
+
+[tasks.setup-container]
+private = true
+# Указываем, что перед созданием контейнера нужно сначала дождаться... 
+# Стоп, wait-postgres должен идти ПОСЛЕ запуска контейнера, 
+# поэтому здесь мы вызываем его как под-задачу через dependencies для следующего шага,
+# но чтобы не ломать логику скрипта, мы просто сделаем wait-postgres ПУБЛИЧНЫМ:
+dependencies = ["create-container-raw"]
+script_runner = "@shell"
+script = """
+docker exec -i postgres-axum psql -U postgres -d myapp -c "
+  CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      gender TEXT NOT NULL
+  );
+"
+"""
+
+# Выносим сам запуск контейнера в отдельный шаг
+[tasks.create-container-raw]
+private = true
+script_runner = "@shell"
+script = """
+docker rm -f postgres-axum 2>/dev/null || true
+
+docker run --name postgres-axum \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=myapp \
+  -p 5432:5432 \
+  -d postgres:alpine
+
+# Так как таск стал публичным, мы можем безопасно вызывать его из скрипта:
+cargo make wait-postgres
+"""
+
+# Делаем таск публичным, чтобы его можно было вызывать из shell-скриптов
+[tasks.wait-postgres]
+description = "Ожидание полной готовности PostgreSQL"
+script_runner = "@shell"
+script = """
+echo "Ожидаем запуск PostgreSQL..."
+# Сначала ждем, пока процесс вообще начнет отвечать
+until docker exec postgres-axum pg_isready -U postgres -d myapp >/dev/null 2>&1; do
+  sleep 0.5
+done
+
+# Дополнительно ждем, пока база начнет успешно выполнять тестовые запросы
+# Это защитит от падения во время внутренней перезагрузки контейнера
+until docker exec postgres-axum psql -U postgres -d myapp -c "SELECT 1" >/dev/null 2>&1; do
+  sleep 0.5
+done
+echo "PostgreSQL полностью готов к работе!"
+"""
