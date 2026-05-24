@@ -1,9 +1,11 @@
 [config]
 skip_core_tasks = true
 
+
 [tasks.setup]
 # Последовательно: поднимаем докер и создаем таблицу -> запускаем ваш reset
 dependencies = ["setup-container", "reset"]
+
 
 [tasks.setup-container]
 private = true
@@ -31,6 +33,7 @@ docker exec -i postgres-axum psql -U postgres -d myapp -c "
   );
 "
 """
+
 
 [tasks.reset]
 script_runner = "@shell"
@@ -118,7 +121,30 @@ cargo run
 """
 
 
-[tasks.remove]
+[tasks.up]
+script_runner = "@shell"
+script = """
+# Проверяем, существует ли контейнер (в любом состоянии)
+if [ "$(docker ps -aq -f name=^postgres-axum$)" ]; then
+  echo "Контейнер найден. Запускаем без потери данных..."
+  docker start postgres-axum
+
+  echo "Ожидаем готовность PostgreSQL..."
+  until docker exec postgres-axum pg_isready -U postgres -d myapp >/dev/null 2>&1; do
+    sleep 0.5
+  done
+
+  # Просто запускаем приложение, так как БД уже настроена
+  cargo run
+else
+  echo "Контейнер не найден! Перенаправляем на полную инициализацию..."
+  # Вызываем таск setup через cargo-make
+  cargo make setup
+fi
+"""
+
+
+[tasks.down]
 script_runner = "@shell"
 script = """
 echo "Останавливаем и удаляем контейнер postgres-axum..."
